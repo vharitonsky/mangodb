@@ -4,12 +4,11 @@ from datetime import datetime
 
 from bson import ObjectId
 from pymongo import MongoClient
-from pymongo.errors import CollectionInvalid
+from pymongo.errors import CollectionInvalid, OperationFailure
 
+from mangodb.constants import CHUNK_SIZE
 from mangodb.types import Bytes, Seconds
 from mangodb.exceptions import NotFoundError
-
-CHUNK_SIZE = 10 * 1024 * 1024 * 1024  # 10 Mb
 
 log = logging.getLogger()
 
@@ -92,11 +91,16 @@ class MangoDB:
         self.collection_created = True
 
     def _ensure_index(self):
-        self.client[self.db][self.collection].ensure_index(
-            'date',
-            name='date_expire',
-            expireAfterSeconds=self.ttl
-        )
+        collection = self.client[self.db][self.collection]
+        collection.create_index('key')
+        try:
+            collection.create_index(
+                'date',
+                name='date_expire',
+                expireAfterSeconds=self.ttl
+            )
+        except OperationFailure:
+            log.warning("Index with the same name already exists")
 
     def _write_chunk_ids(self, key, chunk_ids):
         self.client[self.db][self.collection].insert_one({
@@ -114,7 +118,7 @@ class MangoDB:
             if not chunk:
                 break
             chunk_ids.append(self._write_chunk(chunk))
-        self._write_chunk_ids(key, chunk_ids)
+        self._write_chunk_ids(key, reversed(chunk_ids))
 
     def get_buffer(self, key):
         return DataBuffer(key, self._read)

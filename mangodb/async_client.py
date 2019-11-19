@@ -4,12 +4,11 @@ from datetime import datetime
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import CollectionInvalid
+from pymongo.errors import CollectionInvalid, OperationFailure
 
+from mangodb.constants import CHUNK_SIZE
 from mangodb.types import Bytes, Seconds
 from mangodb.exceptions import NotFoundError
-
-CHUNK_SIZE = 10 * 1024 * 1024 * 1024  # 10 Mb
 
 log = logging.getLogger()
 
@@ -94,11 +93,15 @@ class MangoDB:
 
     async def _ensure_index(self):
         collection = self.client[self.db][self.collection]
-        await collection.create_index(
-            'date',
-            name='date_expire',
-            expireAfterSeconds=self.ttl
-        )
+        await collection.create_index('key')
+        try:
+            await collection.create_index(
+                'date',
+                name='date_expire',
+                expireAfterSeconds=self.ttl
+            )
+        except OperationFailure:
+            log.warning("Index already exists")
 
     async def _write_chunk_ids(self, key, chunk_ids):
         await self.client[self.db][self.collection].insert_one({
@@ -116,7 +119,7 @@ class MangoDB:
             if not chunk:
                 break
             chunk_ids.append(await self._write_chunk(chunk))
-        await self._write_chunk_ids(key, chunk_ids)
+        await self._write_chunk_ids(key, reversed(chunk_ids))
 
     def get_buffer(self, key):
         return DataBuffer(key, self._read)
