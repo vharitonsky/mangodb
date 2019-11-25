@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
       name='mangodb',
-      version='0.1',
+      version='0.2',
       description='Temporary database driver',
       url='http://github.com/vharitonsky/mangodb',
       author='Vitaliy Kharitonskiy',
