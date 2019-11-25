@@ -8,7 +8,7 @@ from pymongo.errors import CollectionInvalid, OperationFailure
 
 from mangodb.constants import CHUNK_SIZE
 from mangodb.types import Bytes, Seconds
-from mangodb.exceptions import NotFoundError
+from mangodb.exceptions import NotFoundError, DuplicateKeyError
 
 log = logging.getLogger()
 
@@ -25,7 +25,7 @@ class DataBuffer:
     async def read(self, n=-1):
         if n == -1:
             n = sys.maxsize
-        if not self.chunks:
+        if self.chunks is None:
             chunks_doc = await self.data_getter(filter={'key': self.key})
             if chunks_doc is None:
                 raise NotFoundError
@@ -51,6 +51,7 @@ class DataBuffer:
 
             if not self.tail:
                 self.current_chunk = None
+        return content
 
 
 class MangoDB:
@@ -63,8 +64,8 @@ class MangoDB:
         self.ttl = ttl
         self.collection_created = False
 
-    def _read(self, **kwargs):
-        return self.client[self.db][self.collection].find_one(**kwargs)
+    async def _read(self, **kwargs):
+        return await self.client[self.db][self.collection].find_one(**kwargs)
 
     async def _write_chunk(self, data):
         return str(
@@ -113,6 +114,8 @@ class MangoDB:
     async def put(self, key, buffer):
         await self._ensure_collection()
         await self._ensure_index()
+        if await self._read(filter={'key': key}):
+            raise DuplicateKeyError
         chunk_ids = []
         while True:
             chunk = buffer.read(CHUNK_SIZE)
@@ -121,8 +124,25 @@ class MangoDB:
             chunk_ids.append(await self._write_chunk(chunk))
         await self._write_chunk_ids(key, reversed(chunk_ids))
 
+    async def put_buffer(self, buffer):
+        await self._ensure_collection()
+        await self._ensure_index()
+        chunk_ids = []
+        while True:
+            chunk = buffer.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            chunk_ids.append(self._write_chunk(chunk))
+        return list(reversed(chunk_ids))
+
+    async def save_chunk_ids(self, key, chunk_ids):
+        existing = await self._read(filter={'key': key})
+        if existing:
+            raise DuplicateKeyError
+        await self._write_chunk_ids(key, chunk_ids)
+
     def get_buffer(self, key):
         return DataBuffer(key, self._read)
 
-    def get(self, key):
-        return self.get_buffer(key).read(-1)
+    async def get(self, key):
+        return await self.get_buffer(key).read(-1)

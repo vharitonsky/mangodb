@@ -8,7 +8,7 @@ from pymongo.errors import CollectionInvalid, OperationFailure
 
 from mangodb.constants import CHUNK_SIZE
 from mangodb.types import Bytes, Seconds
-from mangodb.exceptions import NotFoundError
+from mangodb.exceptions import NotFoundError, DuplicateKeyError
 
 log = logging.getLogger()
 
@@ -25,7 +25,7 @@ class DataBuffer:
     def read(self, n=-1):
         if n == -1:
             n = sys.maxsize
-        if not self.chunks:
+        if self.chunks is None:
             chunks_doc = self.data_getter(filter={'key': self.key})
             if chunks_doc is None:
                 raise NotFoundError
@@ -50,6 +50,7 @@ class DataBuffer:
 
             if not self.tail:
                 self.current_chunk = None
+        return content
 
 
 class MangoDB:
@@ -112,6 +113,8 @@ class MangoDB:
     def put(self, key, buffer):
         self._ensure_collection()
         self._ensure_index()
+        if self._read(filter={'key': key}):
+            raise DuplicateKeyError
         chunk_ids = []
         while True:
             chunk = buffer.read(CHUNK_SIZE)
@@ -119,6 +122,23 @@ class MangoDB:
                 break
             chunk_ids.append(self._write_chunk(chunk))
         self._write_chunk_ids(key, reversed(chunk_ids))
+
+    def put_buffer(self, buffer):
+        self._ensure_collection()
+        self._ensure_index()
+        chunk_ids = []
+        while True:
+            chunk = buffer.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            chunk_ids.append(self._write_chunk(chunk))
+        return list(reversed(chunk_ids))
+
+    def save_chunk_ids(self, key, chunk_ids):
+        existing = self._read(filter={'key': key})
+        if existing:
+            raise DuplicateKeyError
+        self._write_chunk_ids(key, chunk_ids)
 
     def get_buffer(self, key):
         return DataBuffer(key, self._read)
