@@ -56,7 +56,7 @@ class DataBuffer:
 class MangoDB:
 
     def __init__(self, dsn, db, collection: str, cap: Bytes, ttl: Seconds):
-        self.client = MongoClient(dsn)
+        self.client = MongoClient(dsn, connect=False)
         self.db = db
         self.collection = collection
         self.cap = cap

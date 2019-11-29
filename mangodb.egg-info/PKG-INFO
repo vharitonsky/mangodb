@@ -1,12 +1,24 @@
-Metadata-Version: 1.1
+Metadata-Version: 2.1
 Name: mangodb
-Version: 0.2
+Version: 0.3
 Summary: Temporary database driver
 Home-page: http://github.com/vharitonsky/mangodb
 Author: Vitaliy Kharitonskiy
 Author-email: vharitonsky@gmail.com
 License: MIT
-Description: UNKNOWN
+Description: # mangodb
+        
+        MangoDB is a very very thin wrapper around sync/async python mongo driver encapsulating
+        all details necessary for temporary file storage with zero maintenance.
+        
+        1. Capped collection  - when mongo collection is capped, old data is delete when disk space is exhausted
+        
+        2. TTL index - when an object has ttl index, mongo automatically deletes after ttl expires
+        
+        3. Chunked storage - as mongo max document size is capped at 16Mb we have to chunkinate the documents
+        in the same manner GridFS does, but contrary to gridfs, we store metadata in the same collection as chunks,
+        this way it will be deleted along with the chunks.
+        
 Platform: UNKNOWN
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
@@ -16,3 +28,4 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.6
 Classifier: Programming Language :: Python :: 3.7
 Classifier: Programming Language :: Python :: 3.8
+Description-Content-Type: text/markdown
