@@ -76,6 +76,8 @@ class MangoDB:
         )
 
     async def _ensure_collection(self):
+        if not self.cap:
+            return
         if self.collection_created:
             return
         try:
@@ -93,6 +95,8 @@ class MangoDB:
         self.collection_created = True
 
     async def _ensure_index(self):
+        if not self.ttl:
+            return
         collection = self.client[self.db][self.collection]
         await collection.create_index('key')
         try:
