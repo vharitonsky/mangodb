@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: mangodb
-Version: 0.5
+Version: 0.6
 Summary: Temporary database driver
 Home-page: http://github.com/vharitonsky/mangodb
 Author: Vitaliy Kharitonskiy

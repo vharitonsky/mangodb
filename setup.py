@@ -10,7 +10,7 @@ setup(
       name='mangodb',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      version='0.5',
+      version='0.6',
       description='Temporary database driver',
       url='http://github.com/vharitonsky/mangodb',
       author='Vitaliy Kharitonskiy',
