@@ -94,10 +94,10 @@ class MangoDB:
         self.collection_created = True
 
     def _ensure_index(self):
-        if not self.ttl:
-            return
         collection = self.client[self.db][self.collection]
         collection.create_index('key')
+        if not self.ttl:
+            return
         try:
             collection.create_index(
                 'date',
