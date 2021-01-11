@@ -10,7 +10,7 @@ setup(
       name='mangodb',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      version='0.7',
+      version='0.8',
       description='Temporary database driver',
       url='http://github.com/vharitonsky/mangodb',
       author='Vitaliy Kharitonskiy',
@@ -19,7 +19,7 @@ setup(
       packages=find_packages(exclude=["tests"]),
       zip_safe=False,
       install_requires=[
-            'pymongo==3.9.0',
+            'pymongo>=2.9.5',
             'motor==2.0.0',
       ],
       classifiers=[
